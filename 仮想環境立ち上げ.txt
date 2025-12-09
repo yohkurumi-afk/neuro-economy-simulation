@@ -1,0 +1,6 @@
+ターミナルを開いた直後は、まだ仮想環境が無効の状態です。毎回この2ステップを行います。
+1. プロジェクトのフォルダに移動する
+cd Desktop/github/neuro-economy-simulation
+
+2. 仮想環境をオンにする
+source venv/bin/activate
