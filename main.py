@@ -92,7 +92,11 @@ class Market:
             self.trend = -1
         else:
             self.trend = 0
-            
+
+        # 市場のゆらぎ（ノイズ(N（0, 0.02））
+        noise = np.random.normal(0, 0.02)
+        self.price *= (1 + noise)
+
         self.history.append(self.price)
         return self.price, self.trend
 
