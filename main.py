@@ -11,16 +11,18 @@ INITIAL_PRICE = 100   # 株価の初期値
 class NeuroAgent:
     def __init__(self, id, risk_profile='neutral'):
         self.id = id
-        self.cash = 1000.0  # 初期資産
+        self.cash = 1000.0
         self.stock = 0
         self.risk_profile = risk_profile
         
+        # プロスペクト理論パラメータ: 損失をどれくらい嫌がるか
+        # 一般的に人間は「2.25倍」損失を嫌うと言われています
+        self.loss_aversion_ratio = 2.25 
+        
         # Q-table: 状態(2種類) x 行動(3種類)
-        # 状態: 0=価格下落中, 1=価格上昇中
-        # 行動: 0=Buy, 1=Sell, 2=Hold
         self.q_table = np.zeros((2, 3)) 
         
-        # 学習用: 直前の行動と資産を記憶
+        # 学習用
         self.last_action = 2 
         self.last_state = 0
         self.last_asset = self.get_total_asset(INITIAL_PRICE)
@@ -34,7 +36,6 @@ class NeuroAgent:
         state_idx = int(current_price_trend > 0)
         self.last_state = state_idx
 
-        # 10%の確率で「冒険（ランダム）」、90%で「知識利用（最大Q値）」
         if np.random.random() < epsilon:
             action = np.random.choice([0, 1, 2])
         else:
@@ -45,20 +46,29 @@ class NeuroAgent:
 
     def learn(self, current_price, current_price_trend):
         """結果を見て脳（Q-table）を更新する"""
-        alpha = 0.1  # 学習率
-        gamma = 0.9  # 割引率
+        alpha = 0.1
+        gamma = 0.9
         
-        # 報酬の計算（資産の増減）
+        # 資産の変化額（物理的な損益）
         current_asset = self.get_total_asset(current_price)
-        reward = current_asset - self.last_asset
-        self.last_asset = current_asset # 記憶を更新
+        asset_change = current_asset - self.last_asset
+        self.last_asset = current_asset
+
+        # --- ★ここがプロスペクト理論の実装箇所 ---
+        # 心理的な報酬（Subjective Reward）に変換する
+        if asset_change < 0:
+            # 損失の場合、痛みを増幅させる（例: -100円 -> -225の痛み）
+            reward = asset_change * self.loss_aversion_ratio
+        else:
+            # 利益の場合はそのまま（例: +100円 -> +100の喜び）
+            reward = asset_change
+        # ---------------------------------------
 
         # Q学習の更新式
         next_state_idx = int(current_price_trend > 0)
         max_future_q = np.max(self.q_table[next_state_idx])
         current_q = self.q_table[self.last_state][self.last_action]
         
-        # TD誤差
         td_error = reward + gamma * max_future_q - current_q
         self.q_table[self.last_state][self.last_action] += alpha * td_error
 
