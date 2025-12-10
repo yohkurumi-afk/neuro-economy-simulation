@@ -83,20 +83,26 @@ class Market:
         buy_orders = actions.count(0)
         sell_orders = actions.count(1)
         
+        # ★変更点1：ここで数値を定義します（以前は 0.005 でした）
+        impact = 0.0002 
+        
         # 需給による価格変動
         if buy_orders > sell_orders:
-            self.price *= (1 + 0.005 * (buy_orders - sell_orders))
+            # ここで impact を使います
+            self.price *= (1 + impact * (buy_orders - sell_orders))
             self.trend = 1
         elif sell_orders > buy_orders:
-            self.price *= (1 - 0.005 * (sell_orders - buy_orders))
+            # ここでも impact を使います
+            self.price *= (1 - impact * (sell_orders - buy_orders))
             self.trend = -1
         else:
             self.trend = 0
-
-        # 市場のゆらぎ（ノイズ(N（0, 0.02））
-        noise = np.random.normal(0, 0.02)
+            
+        # ★変更点2：市場のゆらぎ（ノイズ）を少し強めました
+        # 0.02 -> 0.03
+        noise = np.random.normal(0, 0.03)
         self.price *= (1 + noise)
-
+            
         self.history.append(self.price)
         return self.price, self.trend
 
